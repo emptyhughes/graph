@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+	
+	<style>
+	.container
+	border-top = solid
+	border-bottom = solid
+	</style>
+	
+</head>
+<body>
+<div id='c1'></div>
+<input type='button' value='stop' onclick = 'stop()'></input>
+<textarea id='console' cols=80 rows=30 style = 'overflow:scroll'></textarea>
+<div id='result'></div>
+</body>
+	<!--script src='./webworker.js'></script-->
+	
+	<script type='module' src="./html.js"></script>
+
+	<script type='module' > 
+
+		import * as HTML from "./html.js"
+		
+		let logger = document.querySelector('#console');
+		let run = true;
+		
+		function* computeSequence() {
+		  let count = 0;
+			while(count < 1000 && run) {
+				yield {node: count++, first: true}
+			}
+		}
+		
+		let graph = function*() {
+				let first, node;
+				//first = computeSequence();
+				for (const {first, node} of computeSequence()) {
+					//console.innerHTML += `${first}  ${node}\n`  ;
+					let t = Math.floor((Math.random() * 10000) + 0);
+					yield new Promise((resolve, reject) => {
+						  setTimeout(() => {
+							resolve({t, node});
+						  }, t );
+						});
+				}
+		}
+		
+		
+		
+		/*let script = function (source){
+		  const blob = new Blob([source], { type: "text/javascript" });
+		  const script = URL.createObjectURL(blob);
+		  //invalidation.then(() => URL.revokeObjectURL(script));
+		  return script;
+		}*/
+		
+		/*let w;
+		
+		if (typeof(w) == "undefined") {
+			w = new Worker("webworker.js");
+			w.onmessage = function(event){
+				document.getElementById("result").innerHTML = event.data;
+				};
+			w.postMessage(1);
+		}
+		
+				function stop() {run = false; if(w) w.terminate();}
+		*/
+		
+		for (const s of graph()) {
+			let val = `${s}\n`;
+			s.then(value => { logger.innerHTML += `Promise: ${value.node} t = ${value.t}\n` })
+		}
+		
+		let a = HTML.html`
+		<div id="cell111" class="container">
+		<h1>Observablehq stdLib</h1>
+		This is generated html from stdlib
+		<div>`;
+		
+		document.body.appendChild(a);		
+		
+/////////////////////////////////////////////////
+	
+	let workerSource2 = `
+var i = 0;
+
+function timedCount() {
+  i = i + 1;
+  postMessage({data: new Date()});
+  setTimeout("timedCount()",1000);
+}
+
+timedCount();
+`
+	let webworker = `
+	
+	let gen = function* () {
+		let i=0;
+		while(true) {	
+			yield new Date();
+			//i++;
+		}
+	}
+	
+	let delay = function(duration, value) {
+		  return new Promise(function(resolve) {
+			setTimeout(function() {
+			  resolve(value);
+			}, duration);
+		  });
+		}
+			
+	async function run() {
+		for (const value of gen()) {		
+			let p = await delay(10, value).then(postMessage({value}));
+		}
+	}
+	
+	run();
+`
+	let piworker = `
+importScripts("https://cdn.jsdelivr.net/npm/decimal.js-light@2.5.1/decimal.min.js");
+
+const precision = 1000;
+const D = Decimal.clone({precision: precision + 4});
+const one = D(1), four = D(4);
+
+function* arctan(x) {
+  const x2 = x.times(x);
+  let k = 1, y = x;
+  while (true) {
+    yield y = y.minus((x = x.times(x2)).div(k += 2));
+    yield y = y.plus((x = x.times(x2)).div(k += 2));
+  }
+}
+
+function* pi() {
+  const a = arctan(one.div(5));
+  const b = arctan(one.div(239));
+  let y0, y1 = one;
+  do yield y0 = y1, y1 = four.times(four.times(a.next().value).minus(b.next().value));
+  while (!y1.equals(y0));
+}
+
+for (const p of pi()) {
+  postMessage({ value:p.toFixed(precision)} );
+}
+
+close();
+`
+//////////////////////////////////////////
+	
+	function that() {
+	  return this;
+	}
+	
+	function observe(initialize) {
+		  let stale = false;
+		  let value;
+		  let resolve;
+		  const dispose = initialize(change);
+
+		  if (dispose != null && typeof dispose !== "function") {
+			throw new Error(
+			  typeof dispose.then === "function"
+				? "async initializers are not supported"
+				: "initializer returned something, but not a dispose function"
+			);
+		  }
+
+		  function change(x) {
+			if (resolve) resolve(x), (resolve = null);
+			else stale = true;
+			return (value = x);
+		  }
+
+		  function next() {
+			return {
+			  done: false,
+			  value: stale
+				? ((stale = false), Promise.resolve(value))
+				: new Promise(_ => (resolve = _))
+			};
+		  }
+
+		  return {
+			[Symbol.iterator]: that,
+			throw: () => ({ done: true }),
+			return: () => (dispose != null && dispose(), { done: true }),
+			next
+		  };
+	}	
+			
+	let renderCell = (name, parent) => {
+		let c = HTML.html`<span style='color:red'>${name} = </span>`;
+		let cell = parent.appendChild(c);
+		c = HTML.html`<span style='color:red'></span>`;
+		return cell.appendChild(c);
+	}
+	
+	let script = (script) => {
+	  const blob = new Blob([script], { type: "text/javascript" });
+	  const scriptURL = URL.createObjectURL(blob);
+	  //invalidation.then(() => URL.revokeObjectURL(script));
+	  return scriptURL;
+	}
+	
+	let runcell = (script) => {
+		return observe(notify => {
+		  const worker = new Worker(script);
+		  worker.addEventListener("message", ({ data }) => notify(data));  //picks up data from websorker
+		  return () => worker.terminate();
+		})
+	}
+	
+	let r = runcell(script(piworker));	
+	
+	let target = renderCell("Pi ", document.body.querySelector("#c1"))
+	
+	function Generator(cell, target) {
+		cell.next().value
+			.then( 
+				(data) => {
+					//target.innerHTML = `${data.value.getHours()}:${data.value.getMinutes().toLocaleString('en-US', {minimumIntegerDigits: 2, useGrouping:false})}:${data.value.getSeconds().toLocaleString('en-US', {minimumIntegerDigits: 2, useGrouping:false})}`;
+					target.innerHTML = `${data.value}`;
+				});
+		window.requestAnimationFrame(() => Generator(cell, target));
+	}
+	
+	Generator(r, target);	
+		
+
+	//this is an endless loop which prevents other loops to function
+	/*let Generator = (r,c) => {
+			r.next().value.then((value) => {c.innerHTML = value; Generator(r,c)})
+		}
+	Generator(runcell(script(webworker)), c);*/
+	
+	
+	</script>
+	
+</html>
