@@ -4,8 +4,8 @@
   "description": "Data-Driven Documents",
   "keywords": [    
   ],
-  "main": "module/html.js",
-  "jsdelivr": "module/html.js",
+  "main": "graph/module/html.js",
+  "jsdelivr": "graph/module/html.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/emptyhughes/graph/.git"
