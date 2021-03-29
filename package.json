@@ -1,13 +1,7 @@
 {
   "name": "graph",
   "version": "0.0.1",
-  "description": "Data-Driven Documents",
+  "description": "Graph",
   "keywords": [    
   ],
-  "main": "module/html.js",
-  "jsdelivr": "graph/module/html.js",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/emptyhughes/graph.git"
   }
-}
