@@ -1,3 +1,6 @@
+//This is a clone of the Observablehq stdlib https://github.com/observablehq/stdlib
+// html render module for testing of exposing a library
+
 function renderHtml(string) {
   const template = document.createElement("template");
   template.innerHTML = string;
