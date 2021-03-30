@@ -5,3 +5,28 @@
   "keywords": [    
   ],
   }
+  
+  {
+  "name": "graph",
+  "version": "v0.0.1-beta",
+  "description": "HTML Library for JavaScript",
+  "homepage": "http://github.com/emptyhughes/graph",
+  "main": "./dist/html.js",
+  "author": {
+    "name": "Mike Hughes",
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "http://www.opensource.org/licenses/mit-license.php"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/emptyhughes/graph.git"
+  },
+  "devDependencies": {
+  },
+  "scripts": {   
+  }
+}
